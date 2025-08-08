@@ -100,7 +100,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-User=mirje
+User=<USER>
 ExecStart=/home/<USER>/core-geth-1.12.20/build/bin/geth \
   --miner.threads=1 \
   --datadir /home/<USER>/classic/.ethereum/ \
