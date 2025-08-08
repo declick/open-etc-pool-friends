@@ -41,249 +41,239 @@ Dependencies:
   * nodejs >= 4 LTS
   * nginx
 
-### Install go lang
+1. Mise à jour système + dépendances
 
-     sudo apt-get update && apt-get upgrade
-     sudo apt-get install golang
-     sudo apt-get install rsync
-     sudo apt-get install git
-     sudo apt-get install ipset
-     sudo ipset create blacklist hash:ip
-    
-### Install npm
-    sudo apt-get install npm
-
-### Install redis-server
-
-     sudo apt-get install redis-server
-
-It is recommended to bind your DB address on 127.0.0.1 or on internal ip. Also, please set up the password for advanced security!!!
-
-### Install nginx
-
-     sudo apt-get install nginx
-
-Search on Google for nginx-setting
-
-### Install NODE
-
-**See source**: [https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions](https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions)
-
-**curl to setup the node.js repository in your sources.**
-
-`curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -`
-
-**Now install node.js.** *Note the command name changes in ubuntu, `nodejs` instead of `node`. This is to avoid a name conflict with a package called `node` in ubuntu.
-`sudo apt-get install -y nodejs`
-
-## Optional (
-**Install bower**. __*NOTE:*__ Used by https://github.com/adiwg/mdEditor
-
-### Warning
 ```
-npm WARN deprecated bower@1.8.2: ...psst! Your project can stop working at any moment because its dependencies can change. Prevent this by migrating to Yarn: https://bower.io/blog/2017/how-to-migrate-away-from-bower/
-/usr/bin/bower -> /usr/lib/node_modules/bower/bin/bower
+sudo apt-get update && sudo apt-get upgrade -y
+sudo apt-get install -y git build-essential make golang redis-server nodejs npm nginx ipset rsync wget
+sudo ipset create blacklist hash:ip
 ```
 
-*YOU HAVE BEEN WARNED*
+2. Installer Node.js 14 LTS et outils Node
 
-`sudo npm install -g bower`
-    
-### Run core-geth   
+```
+curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+sudo apt-get install -y nodejs
+sudo npm install -g bower
+sudo npm install -g ember-cli@2.18
+```
 
-**I highly recommend to use Ubuntu 20.04 LTS.**
- 1. First install:  sudo apt-get install build-essential
- 2. install   sudo apt-get install make
- 3. install   sudo apt-get install git
- 4. install  [core-geth](https://github.com/etclabscore/core-geth/releases).
+3. Télécharger et compiler Core-Geth
 
- 
- Run console 
- 
- New Wallet
+```
+cd /home/<USER>
+wget https://github.com/etclabscore/core-geth/archive/refs/tags/v1.12.20.tar.gz
+tar -xf v1.12.20.tar.gz
+cd core-geth-1.12.20
+make all
+```
+
+4. Préparer dossier blockchain & wallet
+
+```
+mkdir -p /home/<USER>/classic/.ethereum
+chown -R mirje:mirje /home/mirje/classic
+cd /home/<USER>/core-geth-1.12.20/build/bin
+./geth account new --datadir /home/mirje/classic/.ethereum/
+```
+
+# Note bien ton adresse (0x...) et le mot de passe !
+
+5. Préparer fichier mot de passe
+
+```
+echo "ICI_TON_MOT_DE_PASSE" > /home/<USER>/.pw
+chmod 600 /home/<USER>/.pw
+chown mirje:mirje /home/<USER>/.pw
+```
+6. Créer le service systemd Core-Geth miner
+
+```
+sudo nano /etc/systemd/system/geth.service
+```
+Colle ce qui suit (modifie 0xTON_ADRESSE par l'adresse récupérée à l'étape 4 !) :
+
+```
+[Unit]
+Description=Geth Ethereum Classic Miner
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=mirje
+ExecStart=/home/mirje/core-geth-1.12.20/build/bin/geth \
+  --miner.threads=1 \
+  --datadir /home/<USER>/classic/.ethereum/ \
+  --syncmode snap \
+  --cache 12000 \
+  --maxpeers 150 \
+  --http \
+  --http.addr 0.0.0.0 \
+  --http.port 8545 \
+  --http.api eth,net,web3,txpool,miner,admin \
+  --http.corsdomain="*" \
+  --http.vhosts="*" \
+  --miner.etherbase <0xTON_ADRESSE> \
+  --mine \
+  --password /home/mirje/.pw \
+  --allow-insecure-unlock \
+  --unlock <0xTON_ADRESSE> \
+  --classic \
+  --snapshot=true \
+  --port 30305 \
+  --nat any
+
+Restart=always
+RestartSec=3
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target
+```
+
+7. Activer et lancer le service
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable geth
+sudo systemctl start geth
+sudo systemctl status geth
+sudo journalctl -u geth -f
+```
+
+8. Vérifier que Core-Geth écoute
+
+Test depuis la VM :
+
+```
+curl -X POST -H "Content-Type: application/json" \
+  --data '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}' \
+  http://localhost:8545
+```
+
+9. Installer et builder open-etc-pool-friends
+
+```
+cd /home/<USER>
+git clone https://github.com/yuriy0803/open-etc-pool-friends.git
+cd open-etc-pool-friends
+go build
+```
+
+10. Configurer le pool
+
+    Copie api.json d’exemple, adapte : IP, ports, clés, etc.
+
+    Adresse de daemon principale : "url": "http://127.0.0.1:8545"
+
+Édite /home/mirje/open-etc-pool-friends/api.json avec nano ou vim.
+
+11. Installer et builder le frontend pool
+
+```
+cd /home/<USER>/open-etc-pool-friends/www
+npm install
+bower install
+ember install ember-truth-helpers
+npm install jdenticon@2.1.0
+chmod +x build.sh
+./build.sh
+```
+
+Modifie config/environment.js selon ton IP/domaine.
+12. Configurer nginx pour servir le site pool
+
+Édite /etc/nginx/sites-available/default :
+
+```
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    root /home/<USER>/open-etc-pool-friends/www/dist;
+    index index.html index.htm;
+
+    server_name _;
+
+    location / {
+        try_files $uri $uri/ /index.html =404;
+    }
+
+    location /api {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+Puis relance nginx :
+
+```
+sudo systemctl restart nginx
+```
+
+13. Créer le service systemd API pool
+
+```
+sudo nano /etc/systemd/system/api.service
+```
+
+Colle :
+
+```
+[Unit]
+Description=Ethereum Classic Pool API
+After=network-online.target
+
+[Service]
+ExecStart=/home/<USER>/open-etc-pool-friends/open-etc-pool-friends /home/<USER>/open-etc-pool-friends/api.json
+User=<USER>
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Active et démarre :
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable api
+sudo systemctl start api
+sudo systemctl status api
+sudo journalctl -u api -f
+```
+
+14. Vérifications finales
+
+    Geth = port 8545 ouvert, mining actif, pas d’erreur unlock !
+
+    Pool API = port 8080 ouvert, OK logs
+
+    Nginx = http://192.168.1.30/ répond et affiche le site pool
+
+    Firewall : ouvre les ports si besoin
+
+```
+sudo ufw allow 80
+sudo ufw allow 8545
+sudo ufw allow 30305
+sudo ufw allow 8080
  ```
- ./geth account new --datadir /home/pool/classic/.ethereum/
-```
-If you use Ubuntu, it is easier to control services by using serviced.
-
-     sudo nano /etc/systemd/system/geth.service
-    
- Copy the following example
-
-```
-
-[Unit]
-Description=geth
-After=network-online.target
-
-[Service]
-ExecStart=/home/pool/core-geth/build/bin/geth --miner.threads=1 --datadir /home/pool/classic/.ethereum/ --syncmode=snap --http --http.api eth,net,web3,txpool,miner --miner.etherbase=0x95f296f317E8E3AFb3DEf009173E77cCe00B5aeC --mine --cache=8000 --maxpeers 100 --password="/home/pool/.pw" --allow-insecure-unlock --http.port "8545" --nat "any" --unlock 0x95f296f317E8E3AFb3DEf009173E77cCe00B5aeC --miner.extradata ys --classic --snapshot=false --port 30305
-
-User=pool
-
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-
-```
-    
-Then run core-geth by the following commands
-
-    $ sudo systemctl enable geth
-    $ sudo systemctl start geth
-
-If you want to debug the node command
-
-    $ sudo systemctl status geth
-    
-### Open Firewall
-
-Firewall should be opened to operate this service. Whether Ubuntu firewall is basically opened or not, the firewall should be opened based on your situation.
-You can open firewall by opening 80,443,8008,30305.
-
-
-Clone & compile:
-    
-    git clone https://github.com/yuriy0803/open-etc-pool-friends.git
-    cd open-etc-pool-friends
    
-    go build
-
-
-## Install Frontend
-
-### Modify configuration file
-
-     nano ~/open-etc-pool-friends/www/config/environment.js
-
-Make some modifications in these settings.
-
-    ApiUrl: '//your-pool-domain/',
-    HttpHost: 'http://your-pool-domain',
-    StratumHost: 'your-pool-domain',
-    PoolFee: '1%',
-
-The frontend is a single-page Ember.js application that polls the pool API to render miner stats.
-
-### Running Pool
-
-    ./open-etc-pool-friends api.json
-
-
-### Building Frontend
-
-Install nodejs. I suggest using LTS version >= 4.x from https://github.com/nodesource/distributions or from your Linux distribution or simply install nodejs on Ubuntu Xenial 16.04.
-
-> NOTE: at this point keep your nodejs version <= 19.x.
-
-The frontend is a single-page Ember.js application that polls the pool API to render miner stats.
-
-    cd www
-
-Change <code>ApiUrl: '//example.net/'</code> in <code>www/config/environment.js</code> to match your domain name. Also don't forget to adjust other options.
-
-Install deps
-
-     sudo npm install -g ember-cli@2.18
-     sudo npm install -g bower
-     sudo chown -R $USER:$GROUP ~/.npm
-     sudo chown -R $USER:$GROUP ~/.config
-     npm install
-     bower install
-     ember install ember-truth-helpers
-     npm install jdenticon@2.1.0
-
-Build.
-     
-     chmod 755 build.sh
-    ./build.sh
-    
-    
-### Run Pool api.json
-It is required to run pool by serviced. If it is not, the terminal could be stopped, and pool doesn’t work.
-
-     sudo nano /etc/systemd/system/api.service
-
-Copy the following example
-
-```
-[Unit]
-Description=api
-After=network-online.target
-
-[Service]
-ExecStart=/home/pool/open-etc-pool-friends/open-etc-pool-friends /home/pool/open-etc-pool-friends/api.json
-
-User=pool
-
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-```
-Then run api by the following commands
-
-     sudo systemctl enable api
-     sudo systemctl start api
-
-If you want to debug the node command
-
-     sudo systemctl status api
-
-As you can see above, the frontend of the pool homepage is created. Then, move to the directory, www, which services the file.
-
-Set up nginx.
-
-     sudo nano /etc/nginx/sites-available/default
-
-Modify based on configuration file.
-
-    # Default server configuration
-    # nginx example
-
-    upstream api {
-        server 127.0.0.1:8080;
-    }
-
-    server {
-        listen 80 default_server;
-        listen [::]:80 default_server;
-        root /var/www/etc2pool;
-
-        # Add index.php to the list if you are using PHP
-        index index.html index.htm index.nginx-debian.html;
-
-        server_name _;
-
-        location / {
-                # First attempt to serve request as file, then
-                # as directory, then fall back to displaying a 404.
-                try_files $uri $uri/ =404;
-        }
-
-        location /api {
-                proxy_pass http://127.0.0.1:8080;
-        }
-
-    }
-
-After setting nginx is completed, run the command below.
-
-     sudo service nginx restart
-     
-Status all.
-
-     sudo journalctl -f 
-    
-    
 #### Customization
 
 You can customize the layout using built-in web server with live reload:
-
+```
     ember server --port 8082 --environment development
+```
 
 **Don't use built-in web server in production**.
 
