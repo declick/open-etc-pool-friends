@@ -72,9 +72,9 @@ make all
 
 ```
 mkdir -p /home/<USER>/classic/.ethereum
-chown -R mirje:mirje /home/<USER>/classic
+chown -R <USER>:<USER> /home/<USER>/classic
 cd /home/<USER>/core-geth-1.12.20/build/bin
-./geth account new --datadir /home/mirje/classic/.ethereum/
+./geth account new --datadir /home/<USER>/classic/.ethereum/
 ```
 
 # Note bien ton adresse (0x...) et le mot de passe !
@@ -84,7 +84,7 @@ cd /home/<USER>/core-geth-1.12.20/build/bin
 ```
 echo "ICI_TON_MOT_DE_PASSE" > /home/<USER>/.pw
 chmod 600 /home/<USER>/.pw
-chown mirje:mirje /home/<USER>/.pw
+chown <USER>:<USER> /home/<USER>/.pw
 ```
 6. Créer le service systemd Core-Geth miner
 
