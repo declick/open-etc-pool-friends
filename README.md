@@ -101,7 +101,7 @@ Wants=network-online.target
 
 [Service]
 User=mirje
-ExecStart=/home/mirje/core-geth-1.12.20/build/bin/geth \
+ExecStart=/home/<USER>/core-geth-1.12.20/build/bin/geth \
   --miner.threads=1 \
   --datadir /home/<USER>/classic/.ethereum/ \
   --syncmode snap \
@@ -115,7 +115,7 @@ ExecStart=/home/mirje/core-geth-1.12.20/build/bin/geth \
   --http.vhosts="*" \
   --miner.etherbase <0xTON_ADRESSE> \
   --mine \
-  --password /home/mirje/.pw \
+  --password /home/<USER>/.pw \
   --allow-insecure-unlock \
   --unlock <0xTON_ADRESSE> \
   --classic \
