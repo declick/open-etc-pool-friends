@@ -72,7 +72,7 @@ make all
 
 ```
 mkdir -p /home/<USER>/classic/.ethereum
-chown -R mirje:mirje /home/mirje/classic
+chown -R mirje:mirje /home/<USER>/classic
 cd /home/<USER>/core-geth-1.12.20/build/bin
 ./geth account new --datadir /home/mirje/classic/.ethereum/
 ```
