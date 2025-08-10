@@ -186,6 +186,9 @@ Modifie config/environment.js selon ton IP/domaine.
 Édite /etc/nginx/sites-available/default :
 
 ```
+upstream api {
+    server 127.0.0.1:8080;
+}
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
