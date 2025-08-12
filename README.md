@@ -166,7 +166,12 @@ go build
 
     Adresse de daemon principale : "url": "http://127.0.0.1:8545"
 
-Édite /home/<USER>/open-etc-pool-friends/api.json avec nano ou vim.
+Édite 
+```
+/home/<USER>/open-etc-pool-friends/api.json
+
+```
+avec nano ou vim.
 
 11. Installer et builder le frontend pool
 
