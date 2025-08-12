@@ -73,3 +73,154 @@ LimitNOFILE=4096
 [Install]
 WantedBy=multi-user.target
 
+
+{
+	"threads": 4,
+	"coin": "ETC",
+	"name": "Ethereum-Classic",
+	"pplns": 9000,
+	"network": "classic",
+	"coin-name": "etc",
+	"algo": "etchash",
+	"proxy": {
+		"enabled": true,
+		"listen": "0.0.0.0:8888",
+		"limitHeadersSize": 1024,
+		"limitBodySize": 256,
+		"behindReverseProxy": false,
+		"blockRefreshInterval": "50ms",
+		"stateUpdateInterval": "3s",
+		"difficulty": 17179869184,
+		"hashrateExpiration": "3h",
+		"stratumHostname": "192.168.1.34",
+		"healthCheck": true,
+		"debug": true,
+		"maxFails": 100,
+		"stratum": {
+			"enabled": true,
+			"listen": "0.0.0.0:8008",
+			"timeout": "120s",
+			"maxConn": 8192,
+			"tls": false,
+			"certFile": "/etc/letsencrypt/live/example.com/fullchain.pem",
+			"keyFile": "/etc/letsencrypt/live/example.com/privkey.pem"
+		},
+		"varDiff": {
+			"minDiff": 17179869184,
+			"maxDiff": 68719476736,
+			"targetTime": 100,
+			"variancePercent": 30,
+			"maxJump": 50
+		},
+		"policy": {
+			"workers": 8,
+			"resetInterval": "60m",
+			"refreshInterval": "1m",
+			"blacklist_file": "/home/mirje/open-etc-pool-friends/stratum_blacklist.json",
+			"banning": {
+				"enabled": true,
+				"ipset": "blacklist",
+				"timeout": 1800,
+				"invalidPercent": 30,
+				"checkThreshold": 30,
+				"malformedLimit": 5,
+				"fail2banCommand": "fail2ban-client"
+			},
+			"limits": {
+				"enabled": false,
+				"limit": 30,
+				"grace": "5m",
+				"limitJump": 10
+			}
+		}
+	},
+	"api": {
+		"enabled": true,
+		"purgeOnly": false,
+		"purgeInterval": "20m",
+		"listen": "0.0.0.0:8080",
+		"statsCollectInterval": "5s",
+		"hashrateWindow": "30m",
+		"hashrateLargeWindow": "3h",
+		"luckWindow": [
+			64,
+			128,
+			256
+		],
+		"payments": 30,
+		"blocks": 50,
+		"poolCharts": "0 */20 * * * *",
+		"poolChartsNum": 74,
+		"minerCharts": "0 */20 * * * *",
+		"minerChartsNum": 74,
+		"netCharts": "0 */20 * * * *",
+		"netChartsNum": 74,
+		"shareCharts": "0 */20 * * * *",
+		"shareChartsNum": 74
+	},
+	"upstreamCheckInterval": "5s",
+	"upstream": [
+		{
+			"name": "main",
+			"url": "http://127.0.0.1:8545",
+			"timeout": "15s"
+		},
+		{
+			"name": "backup",
+			"url": "http://127.0.0.2:8545",
+			"timeout": "15s"
+		}
+	],
+	"redis": {
+		"endpoint": "127.0.0.1:6379",
+		"poolSize": 10,
+		"database": 0,
+		"password": "",
+		"sentinelEnabled": false,
+		"masterName": "mymaster",
+		"sentinelAddrs": [
+			"127.0.0.1:26379",
+			"127.0.0.1:26389",
+			"127.0.0.1:26399"
+		]
+	},
+	"exchange": {
+		"enabled": true,
+		"name": "coingecko",
+		"url": "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=ethereum-classic",
+		"timeout": "50s",
+		"refreshInterval": "900s"
+	},
+	"unlocker": {
+		"enabled": true,
+		"poolFee": 1.0,
+		"poolFeeAddress": "0xa793ef5420008e6311a35925fcd93fe8800f6de0",
+		"depth": 120,
+		"immatureDepth": 20,
+		"keepTxFees": false,
+		"interval": "20m",
+		"daemon": "http://127.0.0.1:8545",
+		"timeout": "10s",
+		"isLondonHardForkEnabled": false
+	},
+	"payouts": {
+		"enabled": true,
+		"requirePeers": 1,
+		"interval": "30m",
+		"daemon": "http://127.0.0.1:8545",
+		"timeout": "15s",
+		"address": "0xDf399Ba802E8bBBF67Cc46DA92d1Bc30A78fcb73",
+		"gas": "21000",
+		"gasPrice": "50000000000",
+		"autoGas": true,
+		"threshold": 500000000,
+		"bgsave": false,
+		"concurrentTx": 10
+	},
+	"newrelicEnabled": false,
+	"newrelicName": "MyEtherProxy",
+	"newrelicKey": "SECRET_KEY",
+	"newrelicVerbose": false
+}
+
+
