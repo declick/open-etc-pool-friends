@@ -1,0 +1,75 @@
+
+sudo journalctl -u geth -f
+sudo journalctl -u api -f
+
+sudo systemctl stop nginx
+sudo systemctl stop geth
+sudo systemctl stop api
+
+
+sudo systemctl daemon-reload
+sudo systemctl start geth
+sudo systemctl start api
+sudo systemctl daemon-reload
+
+
+status:
+
+sudo systemctl status geth
+sudo systemctl status api
+sudo systemctl status nginx
+
+/home/mirje/core-geth-1.12.20/build/bin/geth attach http://localhost:8545
+
+eth.syncing
+
+curl -X POST -H "Content-Type: application/json" \
+--data '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' \
+http://localhost:8545
+
+curl -X POST -H "Content-Type: application/json" \
+--data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+http://localhost:8545
+
+
+
+[Unit]
+Description=Geth Ethereum Classic Miner
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=400
+StartLimitBurst=5
+
+[Service]
+User=mirje
+ExecStart=/home/mirje/core-geth-1.12.20/build/bin/geth \
+  --miner.threads=1 \
+  --datadir /home/mirje/classic/.ethereum/ \
+  --syncmode snap \
+  --cache 8000 \
+  --maxpeers 200 \
+  --http \
+  --http.addr 0.0.0.0 \
+  --http.port 8545 \
+  --http.api eth,net,web3,txpool,miner,admin \
+  --http.corsdomain="*" \
+  --http.vhosts="*" \
+  --miner.etherbase 0x72b97065e297db73Cd18d92d459FFA6D7D7EbC4a \
+  --mine \
+  --password /home/mirje/.pw \
+  --allow-insecure-unlock \
+  --unlock 0x72b97065e297db73Cd18d92d459FFA6D7D7EbC4a \
+  --classic \
+  --port 30305 \
+  --nat any
+
+TimeoutStopSec=600
+ExecStop=/bin/kill -s SIGINT $MAINPID
+
+Restart=always
+RestartSec=10
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target
+
